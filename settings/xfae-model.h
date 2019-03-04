@@ -49,6 +49,7 @@ typedef enum
   XFAE_MODEL_COLUMN_ENABLED,
   XFAE_MODEL_COLUMN_REMOVABLE,
   XFAE_MODEL_COLUMN_TOOLTIP,
+  XFAE_MODEL_RUN_HOOK,
   XFAE_MODEL_N_COLUMNS,
 } XfaeModelColumn;
 
@@ -56,33 +57,38 @@ GType         xfae_model_get_type (void) G_GNUC_CONST;
 
 GtkTreeModel *xfae_model_new      (void);
 
-gboolean      xfae_model_add      (XfaeModel   *model,
-                                   const gchar *name,
-                                   const gchar *description,
-                                   const gchar *command,
-                                   GError     **error);
+gboolean      xfae_model_add      (XfaeModel    *model,
+                                   const gchar  *name,
+                                   const gchar  *description,
+                                   const gchar  *command,
+                                   GError      **error);
 
-gboolean      xfae_model_get      (XfaeModel   *model,
-                                   GtkTreeIter *iter,
-                                   gchar      **name,
-                                   gchar      **description,
-                                   gchar      **command,
-                                   GError     **error);
+gboolean      xfae_model_get      (XfaeModel    *model,
+                                   GtkTreeIter  *iter,
+                                   gchar       **name,
+                                   gchar       **description,
+                                   gchar       **command,
+                                   GError      **error);
 
-gboolean      xfae_model_remove   (XfaeModel   *model,
-                                   GtkTreeIter *iter,
-                                   GError     **error);
+gboolean      xfae_model_remove   (XfaeModel    *model,
+                                   GtkTreeIter  *iter,
+                                   GError      **error);
 
-gboolean      xfae_model_edit     (XfaeModel   *model,
-                                   GtkTreeIter *iter,
-                                   const gchar *name,
-                                   const gchar *description,
-                                   const gchar *command,
-                                   GError     **error);
+gboolean      xfae_model_edit     (XfaeModel    *model,
+                                   GtkTreeIter  *iter,
+                                   const gchar  *name,
+                                   const gchar  *description,
+                                   const gchar  *command,
+                                   GError      **error);
 
-gboolean      xfae_model_toggle   (XfaeModel   *model,
-                                   GtkTreeIter *iter,
-                                   GError     **error);
+gboolean      xfae_model_toggle   (XfaeModel    *model,
+                                   GtkTreeIter  *iter,
+                                   GError      **error);
+
+gboolean xfae_model_set_run_hook  (GtkTreeModel *tree_model,
+                                   GtkTreeIter  *iter,
+                                   const gchar  *new_text,
+                                   GError      **error);
 
 G_END_DECLS;
 

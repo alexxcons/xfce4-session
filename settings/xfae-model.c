@@ -98,6 +98,7 @@ struct _XfaeItem
   gchar     *relpath;
   gboolean   hidden;
   gchar     *tooltip;
+  gchar     *run_hook;
 
   gboolean   show_in_xfce;
   gboolean   show_in_override;
@@ -204,6 +205,7 @@ xfae_model_get_column_type (GtkTreeModel *tree_model,
     {
     case XFAE_MODEL_COLUMN_NAME:
     case XFAE_MODEL_COLUMN_TOOLTIP:
+    case XFAE_MODEL_RUN_HOOK:
       return G_TYPE_STRING;
 
     case XFAE_MODEL_COLUMN_ICON:
@@ -258,6 +260,34 @@ xfae_model_get_path (GtkTreeModel *tree_model,
     return NULL;
 
   return gtk_tree_path_new_from_indices (index_, -1);
+}
+
+
+
+gboolean
+xfae_model_set_run_hook (GtkTreeModel  *tree_model,
+                         GtkTreeIter   *iter,
+                         const gchar   *new_text,
+                         GError       **error)
+{
+  XfaeItem  *item = ((GList *) iter->user_data)->data;
+  XfceRc      *rc;
+
+  /* try to open the resource config */
+  rc = xfce_rc_config_open (XFCE_RESOURCE_CONFIG, item->relpath, FALSE);
+  if (G_UNLIKELY (rc == NULL))
+    {
+      g_set_error (error, G_FILE_ERROR, g_file_error_from_errno (EIO),
+                   _("Failed to open %s for writing"), item->relpath);
+      return FALSE;
+    }
+
+  xfce_rc_set_group (rc, "Desktop Entry");
+  g_free (item->run_hook);
+  item->run_hook = g_strdup (new_text);
+  xfce_rc_write_entry (rc, "RunHook", item->run_hook);
+  xfce_rc_close (rc);
+  return TRUE;
 }
 
 
@@ -317,6 +347,12 @@ xfae_model_get_value (GtkTreeModel *tree_model,
     case XFAE_MODEL_COLUMN_TOOLTIP:
       g_value_init (value, G_TYPE_STRING);
       g_value_set_static_string (value, item->tooltip);
+      break;
+
+    case XFAE_MODEL_RUN_HOOK:
+      g_value_init (value, G_TYPE_STRING);
+      name = g_markup_printf_escaped ("%s", item->run_hook);
+      g_value_take_string (value, name);
       break;
 
     default:
@@ -481,6 +517,12 @@ xfae_item_new (const gchar *relpath)
           if (G_LIKELY (value != NULL))
             item->tooltip = g_markup_printf_escaped ("<b>%s</b> %s", _("Command:"), value);
 
+          value = xfce_rc_read_entry (rc, "RunHook", NULL);
+          if (G_LIKELY (value != NULL))
+            item->run_hook = g_strdup (value);
+          else
+            item->run_hook = g_strdup ("on login"); // for bw-compatibility
+
           item->hidden = xfce_rc_read_bool_entry (rc, "Hidden", FALSE);
         }
       else
@@ -567,6 +609,7 @@ xfae_item_free (XfaeItem *item)
   g_free (item->comment);
   g_free (item->name);
   g_free (item->tooltip);
+  g_free (item->run_hook);
   g_free (item);
 }
 
@@ -713,6 +756,7 @@ xfae_model_add (XfaeModel   *model,
   xfce_rc_write_entry (rc, "Comment", description);
   xfce_rc_write_entry (rc, "Exec", command);
   xfce_rc_write_entry (rc, "OnlyShowIn", "XFCE;");
+  xfce_rc_write_entry (rc, "RunHook", "on login");
   xfce_rc_write_bool_entry (rc, "StartupNotify", FALSE);
   xfce_rc_write_bool_entry (rc, "Terminal", FALSE);
   xfce_rc_write_bool_entry (rc, "Hidden", FALSE);

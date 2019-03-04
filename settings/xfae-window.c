@@ -30,16 +30,17 @@
 
 #include <libxfce4ui/libxfce4ui.h>
 
-static void     xfae_window_add                 (XfaeWindow       *window);
-static void     xfae_window_remove              (XfaeWindow       *window);
-static void     xfae_window_edit                (XfaeWindow       *window);
-static gboolean xfae_window_button_press_event  (GtkWidget        *treeview,
-                                                 GdkEventButton   *event,
-                                                 XfaeWindow       *window);
-static void     xfae_window_item_toggled        (XfaeWindow       *window,
-                                                 gchar            *path_string);
-static void     xfae_window_selection_changed   (GtkTreeSelection *selection,
-                                                 GtkWidget        *remove_button);
+static void          xfae_window_add                          (XfaeWindow       *window);
+static void          xfae_window_remove                       (XfaeWindow       *window);
+static void          xfae_window_edit                         (XfaeWindow       *window);
+static gboolean      xfae_window_button_press_event           (GtkWidget        *treeview,
+                                                               GdkEventButton   *event,
+                                                               XfaeWindow       *window);
+static void          xfae_window_item_toggled                 (XfaeWindow       *window,
+                                                               gchar            *path_string);
+static void          xfae_window_selection_changed            (GtkTreeSelection *selection,
+                                                               GtkWidget        *remove_button);
+static GtkTreeModel* xfae_window_create_run_hooks_combo_model (void);
 
 
 
@@ -57,6 +58,19 @@ struct _XfaeWindow
   GtkWidget        *treeview;
 };
 
+static const gchar *run_hooks[] =
+{
+    N_("on login"),
+    N_("on logout"),
+    N_("on shutdown"),
+    N_("on restart"),
+    N_("on suspend"),
+    N_("on hibernate"),
+    N_("on hybrid sleep"),
+    N_("on switch user"),
+    NULL,
+};
+
 
 
 G_DEFINE_TYPE (XfaeWindow, xfae_window, GTK_TYPE_BOX);
@@ -66,6 +80,33 @@ G_DEFINE_TYPE (XfaeWindow, xfae_window, GTK_TYPE_BOX);
 static void
 xfae_window_class_init (XfaeWindowClass *klass)
 {
+}
+
+
+
+static void
+run_hook_changed(GtkCellRenderer *render,
+                 const gchar     *path_str,
+                 const gchar     *new_text,
+                 gpointer         user_data)
+{
+    GtkTreeView *treeview = user_data;
+    GtkTreeModel *model = gtk_tree_view_get_model (treeview);
+    GtkTreePath *path = gtk_tree_path_new_from_string (path_str);
+    GtkTreeIter iter;
+
+    TRACE("entering");
+
+    if(gtk_tree_model_get_iter (model, &iter, path))
+      {
+        GError *error = NULL;
+        if (!xfae_model_set_run_hook (model, &iter, new_text, &error))
+          {
+            xfce_dialog_show_error (NULL, error, _("Failed to set run hook"));
+            g_error_free (error);
+          }
+      }
+    gtk_tree_path_free(path);
 }
 
 
@@ -103,11 +144,11 @@ xfae_window_init (XfaeWindow *window)
   label = g_object_new (GTK_TYPE_LABEL,
                         "justify", GTK_JUSTIFY_LEFT,
                         "label", _("Below is the list of applications that will be started "
-                                   "automatically when you login to your Xfce desktop, "
-                                   "in addition to the applications that were saved when "
-                                   "you logged out last time. Cursive applications belong "
-                                   "to another desktop environment, but you can still enable "
-                                   "them if you want."),
+                                   "automatically on specific events like login, logout, shutdown, etc. "
+                                   "On login additionally all applications that were saved when "
+                                   "you logged out last time will be started.\n"
+                                   "Cursive applications belong to another desktop environment, "
+                                   "but you can still enable them if you want."),
                         "xalign", 0.0f,
                         NULL);
   gtk_label_set_line_wrap (GTK_LABEL (label), TRUE);
@@ -159,6 +200,28 @@ xfae_window_init (XfaeWindow *window)
                          "reorderable", FALSE,
                          "resizable", FALSE,
                          NULL);
+
+  renderer = gtk_cell_renderer_combo_new ();
+  model = xfae_window_create_run_hooks_combo_model ();
+  g_object_set (renderer,
+                "has-entry", FALSE,
+                "model", model,
+                "text-column", 0,
+                "editable", TRUE,
+                "mode", GTK_CELL_RENDERER_MODE_EDITABLE,
+                NULL);
+  g_signal_connect (renderer, "edited", G_CALLBACK (run_hook_changed), window->treeview);
+
+  gtk_tree_view_column_pack_start (column, renderer, FALSE);
+  gtk_tree_view_column_set_attributes (column, renderer,
+                                       "text", XFAE_MODEL_RUN_HOOK,
+                                       NULL);
+  gtk_tree_view_append_column (GTK_TREE_VIEW (window->treeview), column);
+  g_object_unref (model);
+  column = g_object_new (GTK_TYPE_TREE_VIEW_COLUMN,
+                         "reorderable", FALSE,
+                         "resizable", FALSE,
+                         NULL);
   renderer = gtk_cell_renderer_pixbuf_new ();
   gtk_tree_view_column_pack_start (column, renderer, FALSE);
   gtk_tree_view_column_set_attributes (column, renderer,
@@ -201,6 +264,23 @@ xfae_window_init (XfaeWindow *window)
   g_signal_connect (G_OBJECT (window->selection), "changed",
                     G_CALLBACK (xfae_window_selection_changed), button);
   xfae_window_selection_changed (window->selection, button);
+}
+
+
+
+static GtkTreeModel *
+xfae_window_create_run_hooks_combo_model (void)
+{
+    GtkListStore *ls = gtk_list_store_new (1, G_TYPE_STRING);
+    GtkTreeIter iter;
+    gint i;
+
+    for(i = 0; run_hooks[i]; ++i)
+      {
+        gtk_list_store_append (ls, &iter);
+        gtk_list_store_set (ls, &iter, 0, _(run_hooks[i]), -1);
+      }
+    return GTK_TREE_MODEL(ls);
 }
 
 

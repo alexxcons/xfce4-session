@@ -74,4 +74,8 @@ GdkPixbuf *xfsm_load_session_preview (const gchar *name);
 GValue *xfsm_g_value_new (GType gtype);
 void    xfsm_g_value_free (GValue *value);
 
+void    xfsm_autostart_migrate (void);
+gint    xfsm_launch_desktop_files_for_run_hook (gboolean  start_at_spi,
+                                              const char *run_hook_name);
+
 #endif /* !__XFSM_GLOBAL_H__ */
