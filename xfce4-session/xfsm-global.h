@@ -27,6 +27,7 @@
 #include <X11/SM/SMlib.h>
 
 #include <xfce4-session/xfsm-splash-screen.h>
+#include <xfce4-session/xfsm-shutdown.h>
 
 typedef struct _FailsafeClient FailsafeClient;
 struct _FailsafeClient
@@ -75,7 +76,13 @@ GValue *xfsm_g_value_new (GType gtype);
 void    xfsm_g_value_free (GValue *value);
 
 void    xfsm_autostart_migrate (void);
-gint    xfsm_launch_desktop_files_for_run_hook (gboolean  start_at_spi,
-                                              const char *run_hook_name);
+
+gboolean xfsm_shutdown_type_to_run_hook_name (XfsmShutdownType shutdown_type, gchar *run_hook_name);
+
+gint    xfsm_launch_desktop_files_on_login    (gboolean         start_at_spi);
+gint    xfsm_launch_desktop_files_on_shutdown (gboolean         start_at_spi,
+                                               XfsmShutdownType shutdown_type);
+gint    xfsm_launch_desktop_files_on_run_hook (gboolean         start_at_spi,
+                                               const gchar     *run_hook_name);
 
 #endif /* !__XFSM_GLOBAL_H__ */

@@ -198,27 +198,21 @@ xfsm_shutdown_try_type (XfsmShutdown      *shutdown,
   switch (type)
     {
     case XFSM_SHUTDOWN_SHUTDOWN:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on shutdown");
       return xfsm_shutdown_try_shutdown (shutdown, error);
 
     case XFSM_SHUTDOWN_RESTART:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on restart");
       return xfsm_shutdown_try_restart (shutdown, error);
 
     case XFSM_SHUTDOWN_SUSPEND:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on suspend");
       return xfsm_shutdown_try_suspend (shutdown, error);
 
     case XFSM_SHUTDOWN_HIBERNATE:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on hibernate");
       return xfsm_shutdown_try_hibernate (shutdown, error);
 
     case XFSM_SHUTDOWN_HYBRID_SLEEP:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on hybrid sleep");
       return xfsm_shutdown_try_hybrid_sleep (shutdown, error);
 
     case XFSM_SHUTDOWN_SWITCH_USER:
-      xfsm_launch_desktop_files_for_run_hook (FALSE, "on switch user");
       return xfsm_shutdown_try_switch_user (shutdown, error);
 
     default:

@@ -359,10 +359,77 @@ xfsm_check_valid_exec (const gchar *exec)
 }
 
 
+/* returns TRUE on success */
+/* on success, run_hook_name has to be freed with g_free() after usage !! */
+gboolean
+xfsm_shutdown_type_to_run_hook_name (XfsmShutdownType shutdown_type, gchar *run_hook_name)
+{
+  switch (shutdown_type)
+    {
+    case XFSM_SHUTDOWN_LOGOUT:
+      run_hook_name = g_strdup ("on logout");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_SHUTDOWN:
+      run_hook_name = g_strdup ("on shutdown");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_RESTART:
+      run_hook_name = g_strdup ("on restart");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_SUSPEND:
+      run_hook_name = g_strdup ("on suspend");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_HIBERNATE:
+      run_hook_name = g_strdup ("on hibernate");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_HYBRID_SLEEP:
+      run_hook_name = g_strdup ("on hybrid sleep");
+      return TRUE;
+
+    case XFSM_SHUTDOWN_SWITCH_USER:
+      run_hook_name = g_strdup ("on switch user");
+      return TRUE;
+
+    default:
+      g_error ("Failed to convert shutdown type '%d' to run hook name.", shutdown_type);
+      return FALSE;
+      g_return_val_if_fail (run_hook_name == NULL, FALSE);
+    }
+}
+
+
 
 gint
-xfsm_launch_desktop_files_for_run_hook (gboolean  start_at_spi,
-                                      const char *run_hook_name)
+xfsm_launch_desktop_files_on_login (gboolean         start_at_spi)
+{
+  return xfsm_launch_desktop_files_on_run_hook(start_at_spi, "on login");
+}
+
+
+
+gint
+xfsm_launch_desktop_files_on_shutdown (gboolean         start_at_spi,
+                                       XfsmShutdownType shutdown_type)
+{
+  gchar       *run_hook_name = NULL;
+  gint         started = 0;
+
+  if(!xfsm_shutdown_type_to_run_hook_name (shutdown_type, run_hook_name))
+    return started;
+  started = xfsm_launch_desktop_files_on_run_hook(start_at_spi, run_hook_name);
+  g_free(run_hook_name);
+  return started;
+}
+
+
+
+gint
+xfsm_launch_desktop_files_on_run_hook (gboolean     start_at_spi,
+                                       const gchar *run_hook_name)
 {
   const gchar *try_exec;
   const gchar *type;
@@ -516,6 +583,5 @@ xfsm_launch_desktop_files_for_run_hook (gboolean  start_at_spi,
       xfce_rc_close (rc);
     }
   g_strfreev (files);
-
   return started;
 }
