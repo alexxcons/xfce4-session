@@ -77,8 +77,6 @@ void    xfsm_g_value_free (GValue *value);
 
 void    xfsm_autostart_migrate (void);
 
-gboolean xfsm_shutdown_type_to_run_hook_name (XfsmShutdownType shutdown_type, gchar *run_hook_name);
-
 gint    xfsm_launch_desktop_files_on_login    (gboolean         start_at_spi);
 gint    xfsm_launch_desktop_files_on_shutdown (gboolean         start_at_spi,
                                                XfsmShutdownType shutdown_type);
